@@ -1,0 +1,375 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Launch EC2 - CSYE 6225 Spring 2020",
+    "Parameters": {
+      "InstanceTypeParameter": {
+        "Type": "String",
+        "Default": "t2.micro",
+        "AllowedValues": ["t2.micro", "m1.small", "m1.large"],
+        "Description": "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+      },
+      
+      "VPCNameParameter": {
+        "Type": "String",
+        "Default": "DemoVPC",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "VPCCIDRParameter": {
+        "Type": "String",
+        "Default": "10.10.0.0/16",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "RouteTableNameParameter": {
+        "Type": "String",
+        "Default": "DemoVPC",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "Subnet01CidrParameter": {
+        "Type": "String",
+        "Default": "10.10.1.0/24",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "Subnet01NameParameter": {
+        "Type": "String",
+        "Default": "Subnet01",
+        "Description": "Enter the name of the VPC"
+      },
+
+
+      "Subnet02CidrParameter": {
+        "Type": "String",
+        "Default": "10.10.2.0/24",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "Subnet02NameParameter": {
+        "Type": "String",
+        "Default": "Subnet02",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "Subnet03CidrParameter": {
+        "Type": "String",
+        "Default": "10.10.3.0/24",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "Subnet03NameParameter": {
+        "Type": "String",
+        "Default": "Subnet03",
+        "Description": "Enter the name of the VPC"
+      },
+
+
+      "RegionParameter": {
+        "Type": "String",
+        "Default": "IGDemo",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "InternetGatewayNameParameter": {
+        "Type": "String",
+        "Default": "IGDemo",
+        "Description": "Enter the name of the VPC"
+      },
+
+
+      "InternetGatewayAttachmentParameter": {
+        "Type": "String",
+        "Default": "igw-b15733ca",
+        "Description": "Enter the name of the VPC"
+      },
+
+
+      "RouteTableAssociation01Parameter": {
+        "Type": "String",
+        "Default": "IGDemo",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "RouteTableAssociation02Parameter": {
+        "Type": "String",
+        "Default": "IGDemo",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "RouteTableAssociation03Parameter": {
+        "Type": "String",
+        "Default": "IGDemo",
+        "Description": "Enter the name of the VPC"
+      },
+
+      "RouteNameParameter": {
+        "Type": "String",
+        "Default": "IGDemo",
+        "Description": "Enter the name of the VPC"
+      }
+
+    },
+    "Resources": {
+      
+      "EC2Instance": {
+        "Type": "AWS::EC2::Instance",
+        "Properties": {
+          "ImageId": "ami-0ff0e594ed9976dc4",
+          "InstanceType": {
+            "Ref": "InstanceTypeParameter"
+          },
+          "SecurityGroupIds": [
+            "sg-7f89fb54"
+          ],
+          "KeyName": "packer_5e49f5c7-5632-08e3-32e0-7a58fc9e05e9",
+          "SubnetId": "subnet-3b0bee5d"
+        }
+      },
+
+      "VPC": {
+        "Type": "AWS::EC2::VPC",
+        "Properties": {
+          "CidrBlock": {
+            "Ref": "VPCCIDRParameter"
+          },
+          "EnableDnsHostnames": true,
+          "EnableDnsSupport": true,
+          "InstanceTenancy": "default",
+          "Tags": [
+            {
+              "Key": "Name",
+              "Value": {
+                "Ref": "VPCNameParameter"
+              }
+            }
+          ]
+        }
+      },
+
+
+      "RouteTable": {
+        "Type": "AWS::EC2::RouteTable",
+        "Properties": {
+          "Tags": [
+            {
+              "Key": "Name",
+              "Value": {
+                "Ref": "RouteTableNameParameter"
+              }
+            }
+          ],
+          "VpcId": {
+            "Ref": "VPC"
+          }
+        }
+      },
+
+
+      "Subnet01": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "AvailabilityZone": {
+            "Fn::Select": [
+              "1",
+              {
+                "Fn::GetAZs": ""
+              }
+            ]
+          },
+          "CidrBlock": {
+            "Ref": "Subnet01CidrParameter"
+          },
+          "MapPublicIpOnLaunch": true,
+          "Tags": [
+            {
+              "Key": "Name",
+              "Value": {
+                "Ref": "Subnet01NameParameter"
+              }
+            }
+          ],
+          "VpcId": {
+            "Ref": "VPC"
+          }
+        }
+      },
+
+
+      "Subnet02": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "AvailabilityZone": {
+            "Fn::Select": [
+              "2",
+              {
+                "Fn::GetAZs": ""
+              }
+            ]
+          },
+          "CidrBlock": {
+            "Ref": "Subnet02CidrParameter"
+          },
+          "MapPublicIpOnLaunch": true,
+          "Tags": [
+            {
+              "Key": "Name",
+              "Value": {
+                "Ref": "Subnet02NameParameter"
+              }
+            }
+          ],
+          "VpcId": {
+            "Ref": "VPC"
+          }
+        }
+      },
+
+
+      "Subnet03": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "AvailabilityZone": {
+            "Fn::Select": [
+              "3",
+              {
+                "Fn::GetAZs": ""
+              }
+            ]
+          },
+          "CidrBlock": {
+            "Ref": "Subnet03CidrParameter"
+          },
+          "MapPublicIpOnLaunch": true,
+          "Tags": [
+            {
+              "Key": "Name",
+              "Value": {
+                "Ref": "Subnet03NameParameter"
+              }
+            }
+          ],
+          "VpcId": {
+            "Ref": "VPC"
+          }
+        }
+      },
+
+
+      "InternetGateway": {
+        "Type": "AWS::EC2::InternetGateway",
+        "Properties": {
+          "Tags": [
+            {
+              "Key": "Name",
+              "Value": {
+                "Ref": "InternetGatewayNameParameter"
+              }
+            }
+          ]
+        }
+      },
+
+
+      "InternetGatewayAttachment": {
+        "Type": "AWS::EC2::VPCGatewayAttachment",
+        "Properties": {
+          "InternetGatewayId": {
+            "Ref": "InternetGatewayAttachmentParameter"
+          },
+          "VpcId": {
+            "Ref": "VPC"
+          }
+        }
+      },
+
+
+      "RouteTableAssociation01": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "RouteTableId": {
+            "Ref": "RouteTableAssociation01Parameter"
+          },
+          "SubnetId": {
+            "Ref": "Subnet01"
+          }
+        }
+      },
+
+      "RouteTableAssociation02": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "RouteTableId": {
+            "Ref": "RouteTableAssociation02Parameter"
+          },
+          "SubnetId": {
+            "Ref": "Subnet02"
+          }
+        }
+      },
+
+      "RouteTableAssociation03": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "RouteTableId": {
+            "Ref": "RouteTableAssociation03Parameter"
+          },
+          "SubnetId": {
+            "Ref": "Subnet03"
+          }
+        }
+      },
+
+
+      "Route": {
+        "Type": "AWS::EC2::Route",
+        "Properties": {
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "GatewayId": {
+            "Ref": "RouteNameParameter"
+          },
+          "RouteTableId": {
+            "Ref": "RouteTable"
+          }
+        }
+      }
+
+
+
+    },
+    "Outputs": {
+      "InstanceId": {
+        "Description": "InstanceId of the newly created EC2 instance",
+        "Value": {
+          "Ref": "EC2Instance"
+        }
+      },
+      "AZ": {
+        "Description": "Availability Zone of the newly created EC2 instance",
+        "Value": {
+          "Fn::GetAtt": [
+            "EC2Instance",
+            "AvailabilityZone"
+          ]
+        }
+      },
+      "PublicDNS": {
+        "Description": "Public DNSName of the newly created EC2 instance",
+        "Value": {
+          "Fn::GetAtt": [
+            "EC2Instance",
+            "PublicDnsName"
+          ]
+        }
+      },
+      "PublicIP": {
+        "Description": "Public IP address of the newly created EC2 instance",
+        "Value": {
+          "Fn::GetAtt": [
+            "EC2Instance",
+            "PublicIp"
+          ]
+        }
+      }
+    }
+  }

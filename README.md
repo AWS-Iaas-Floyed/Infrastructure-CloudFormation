@@ -8,7 +8,11 @@ Follow below steps in order to use the AWS CloudFormation
 aws cloudformation create-stack \
   --stack-name csye6225demo \
   --parameters ParameterKey=InstanceTypeParameter,ParameterValue=t2.micro \
+  --parameters ParameterKey=InstanceTypeParameter,ParameterValue=t2.micro \
+  --parameters ParameterKey=InstanceTypeParameter,ParameterValue=t2.micro \
+  --parameters ParameterKey=InstanceTypeParameter,ParameterValue=t2.micro \
   --template-body file://networking.json
+  --dev
 ```
 
 ## DELETE CLOUDFORMATION STACK
