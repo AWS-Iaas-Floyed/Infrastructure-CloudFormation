@@ -105,7 +105,7 @@
 
       "RouteNameParameter": {
         "Type": "String",
-        "Default": "IGDemo",
+        "Default": "igw-b15733ca",
         "Description": "Enter the name of the VPC"
       }
 
@@ -275,7 +275,7 @@
         "Type": "AWS::EC2::VPCGatewayAttachment",
         "Properties": {
           "InternetGatewayId": {
-            "Ref": "InternetGatewayAttachmentParameter"
+            "Ref": "InternetGateway"
           },
           "VpcId": {
             "Ref": "VPC"
@@ -288,7 +288,7 @@
         "Type": "AWS::EC2::SubnetRouteTableAssociation",
         "Properties": {
           "RouteTableId": {
-            "Ref": "RouteTableAssociation01Parameter"
+            "Ref": "RouteTable"
           },
           "SubnetId": {
             "Ref": "Subnet01"
@@ -300,7 +300,7 @@
         "Type": "AWS::EC2::SubnetRouteTableAssociation",
         "Properties": {
           "RouteTableId": {
-            "Ref": "RouteTableAssociation02Parameter"
+            "Ref": "RouteTable"
           },
           "SubnetId": {
             "Ref": "Subnet02"
@@ -312,7 +312,7 @@
         "Type": "AWS::EC2::SubnetRouteTableAssociation",
         "Properties": {
           "RouteTableId": {
-            "Ref": "RouteTableAssociation03Parameter"
+            "Ref": "RouteTable"
           },
           "SubnetId": {
             "Ref": "Subnet03"
@@ -326,7 +326,7 @@
         "Properties": {
           "DestinationCidrBlock": "0.0.0.0/0",
           "GatewayId": {
-            "Ref": "RouteNameParameter"
+            "Ref": "InternetGateway"
           },
           "RouteTableId": {
             "Ref": "RouteTable"
