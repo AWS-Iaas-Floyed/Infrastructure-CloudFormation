@@ -2,29 +2,35 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "CloudFormation template to create the application stack",
     "Parameters": {
-      "InstanceTypeParameter": {
-        "Type": "String",
-        "Default": "t2.micro",
-        "AllowedValues": ["t2.micro", "m1.small", "m1.large"],
-        "Description": "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
-      },
 
       "VPCStackName": {
         "Type": "String",
         "Default": "demostack1"
       },
 
-      "AMIID" : {
+      "AMIIDParameter" : {
         "Type": "String",
-        "Default": "ami-0319261139b2213ac"
+        "Default": "ami-0b4f9942868645e80"
       }
 
     },
     "Resources": {
-      
+
+      "EC2InstanceProfile": {
+        "Type": "AWS::IAM::InstanceProfile",
+        "Properties": {
+          "InstanceProfileName": "EC2InstanceProfile",
+          "Roles": [
+            {
+              "Ref": "EC2CSYE6225"
+            }
+          ]
+        }
+      },
+
       "EC2Instance": {
         "Type": "AWS::EC2::Instance",
-        "DependsOn": "RDS",
+        "DependsOn": "RDSDB",
         "Properties": {
 
           "SubnetId": {
@@ -34,11 +40,11 @@
           },
 
           "ImageId": {
-            "Ref": "AMIID"
+            "Ref": "AMIIDParameter"
           },
 
           "IamInstanceProfile": {
-            "Ref": "IAMProfile"
+            "Ref": "EC2InstanceProfile"
           },
           "SecurityGroupIds": [
             {
@@ -46,7 +52,7 @@
             }
           ],
           "InstanceType": "t2.micro",
-          "KeyName": "csye6225-centOS",
+          "KeyName": "awsdemo",
           "BlockDeviceMappings": [
             {
               "DeviceName": "/dev/sda1",
@@ -57,40 +63,198 @@
               }
             }
           ],
+
+
+
           "UserData": {
             "Fn::Base64": {
               "Fn::Join": [
                 "",
                 [
-                  "#cloud-boothook\n",
                   "#!/bin/sh\n",
                   "cd /etc/profile.d\n",
-                  "sudo touch custom.sh\n",
+                  "sudo touch userdata.sh\n",
+
+                  "sudo echo export RDS_USERNAME=dbuser",
+                  " >> userdata.sh\n",
+
+                  "sudo echo export RDS_PASSWORD=dbuserpassword123",
+                  " >> userdata.sh\n",
+
                   "sudo echo export RDS_HOSTNAME=",
                   {
                     "Fn::GetAtt": [
-                      "RDS",
+                      "RDSDB",
                       "Endpoint.Address"
                     ]
                   },
-                  " >> custom.sh\n",
-                  "sudo echo export RDS_USERNAME=csye6225master",
-                  " >> custom.sh\n",
-                  "sudo echo export RDS_PASSWORD=csye6225password",
-                  " >> custom.sh\n",
-                  "sudo echo export S3_BUCKET_ADDR=",
+                  " >> userdata.sh\n",
+
+                  "sudo echo export S3_BUCKET_ADDRESS=",
                   {
-                    "Ref": "ImageS3Bucket"
+                    "Fn::GetAtt": [
+                      "EncryptedS3Bucket",
+                      "DomainName"
+                    ]
                   },
-                  " >> custom.sh\n",
-                  "sudo echo export DOMAIN_NAME=", {"Ref": "DomainName"}, ">> custom.sh\n"
+                  " >> userdata.sh\n",
+                  "sudo echo export APPLICATION_ENV=prod",
+                  " >> userdata.sh\n"
                 ]
               ]
+            }
+          }
+
+
+
+        }
+      },
+
+
+      "EC2InstanceSecurityGroup": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+          "GroupDescription": "Open ports to client",
+          "GroupName" : "Application Security Group",
+          "VpcId": {
+            "Fn::ImportValue": {
+              "Fn::Sub": "${VPCStackName}-VPC"
+            }
+          },
+          "SecurityGroupIngress": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "CidrIp": "0.0.0.0/0"
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "CidrIp": "0.0.0.0/0"
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 443,
+              "ToPort": 443,
+              "CidrIp": "0.0.0.0/0"
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 3000,
+              "ToPort": 3000,
+              "CidrIp": "0.0.0.0/0"
+            }
+          ]
+        }
+      },
+
+
+      "EC2CSYE6225": {
+        "Type": "AWS::IAM::Role",
+        "Properties": {
+          "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                },
+                "Action": "sts:AssumeRole"
+              }
+            ]
+          },
+          "RoleName": "EC2-CSYE6225"
+        }
+      },
+
+
+
+      "WebAppS3": {
+        "Type": "AWS::IAM::Policy",
+        "Properties": {
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": [
+                  "s3:PutObject",
+                  "s3:GetObject",
+                  "s3:DeleteObject"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+
+                  {
+                    "Fn::GetAtt": [
+                      "EncryptedS3Bucket",
+                      "Arn"
+                    ]
+                  },
+                  {
+                    "Fn::Join": [
+                      "",
+                      [
+                        {
+                          "Fn::GetAtt": [
+                            "EncryptedS3Bucket",
+                            "Arn"
+                          ]
+                        },
+                        "/*"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "PolicyName": "WebAppS3",
+          "Roles": [
+            {
+              "Ref": "EC2CSYE6225"
+            }
+          ]
+        }
+      },
+
+
+
+
+      "DatabaseSecurityGroupRDS": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+          "GroupDescription": "Open up database access ports",
+          "GroupName" : "Database Security Group",
+          "VpcId": {
+            "Fn::ImportValue": {
+              "Fn::Sub": "${VPCStackName}-VPC"
             }
           }
         }
       },
 
+      "DatabaseSecurityGroupIngressRDS": {
+        "Type": "AWS::EC2::SecurityGroupIngress",
+        "Properties": {
+          "GroupId": {
+            "Ref": "DatabaseSecurityGroupRDS"
+          },
+          "IpProtocol": "tcp",
+          "FromPort": 3306,
+          "ToPort": 3306,
+          "SourceSecurityGroupId": {
+            "Fn::GetAtt": [
+              "EC2InstanceSecurityGroup",
+              "GroupId"
+            ]
+          }
+        }
+      },
 
 
       "EncryptedS3Bucket": {
@@ -111,53 +275,78 @@
             "LifecycleConfiguration": {
                 "Rules": [
                     {
+                      "Status": "Enabled",
                       "Transitions": [
                           {
-                            "TransitionInDays": "30",
+                            "TransitionInDays": 30,
                             "StorageClass": "STANDARD_IA"
                           }
                       ]
                     }
                 ]
+            },
+
+
+            "PublicAccessBlockConfiguration" : 
+              {
+                "BlockPublicAcls" : true,
+                "BlockPublicPolicy" : true,
+                "IgnorePublicAcls" : true,
+                "RestrictPublicBuckets" : true
+              }
+        }
+      },
+
+
+
+      "RDSDB": {
+        "Type": "AWS::RDS::DBInstance",
+        "Properties": {
+          "AllocatedStorage": "5",
+          "DBInstanceClass": "db.t3.micro",
+          "MultiAZ": false,
+          "MasterUsername": "dbuser",
+          "MasterUserPassword": "dbuserpassword123",
+          "DBInstanceIdentifier": "csye6225-spring2020",
+          "DBName": "csye6225",
+          "Engine": "MySQL",
+          "PubliclyAccessible" : false,
+
+          "VPCSecurityGroups": [
+            {
+              "Ref": "DatabaseSecurityGroupRDS"
             }
+          ],
+          "DBSubnetGroupName": {
+            "Ref": "RDSDBSubnetGroup"
+          }
+        }
+      },
+
+
+      "RDSDBSubnetGroup": {
+        "Type": "AWS::RDS::DBSubnetGroup",
+        "Properties": {
+          "DBSubnetGroupDescription": "Database Subnet Group for RDS",
+          "DBSubnetGroupName": "SubnetGroupRDS",
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": {
+                "Fn::Sub": "${VPCStackName}-Subnet02"
+              }
+            },
+            {
+              "Fn::ImportValue": {
+                "Fn::Sub": "${VPCStackName}-Subnet03"
+              }
+            }
+          ]
         }
       }
 
 
     },
     "Outputs": {
-      "InstanceId": {
-        "Description": "InstanceId of the newly created EC2 instance",
-        "Value": {
-          "Ref": "EC2Instance"
-        }
-      },
-      "AZ": {
-        "Description": "Availability Zone of the newly created EC2 instance",
-        "Value": {
-          "Fn::GetAtt": [
-            "EC2Instance",
-            "AvailabilityZone"
-          ]
-        }
-      },
-      "PublicDNS": {
-        "Description": "Public DNSName of the newly created EC2 instance",
-        "Value": {
-          "Fn::GetAtt": [
-            "EC2Instance",
-            "PublicDnsName"
-          ]
-        }
-      },
-      "PublicIP": {
-        "Description": "Public IP address of the newly created EC2 instance",
-        "Value": {
-          "Fn::GetAtt": [
-            "EC2Instance",
-            "PublicIp"
-          ]
-        }
-      }
+
     }
   }
