@@ -1,0 +1,163 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "CloudFormation template to create the application stack",
+    "Parameters": {
+      "InstanceTypeParameter": {
+        "Type": "String",
+        "Default": "t2.micro",
+        "AllowedValues": ["t2.micro", "m1.small", "m1.large"],
+        "Description": "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+      },
+
+      "VPCStackName": {
+        "Type": "String",
+        "Default": "demostack1"
+      },
+
+      "AMIID" : {
+        "Type": "String",
+        "Default": "ami-0319261139b2213ac"
+      }
+
+    },
+    "Resources": {
+      
+      "EC2Instance": {
+        "Type": "AWS::EC2::Instance",
+        "DependsOn": "RDS",
+        "Properties": {
+
+          "SubnetId": {
+            "Fn::ImportValue": {
+              "Fn::Sub": "${VPCStackName}-Subnet01"
+            }
+          },
+
+          "ImageId": {
+            "Ref": "AMIID"
+          },
+
+          "IamInstanceProfile": {
+            "Ref": "IAMProfile"
+          },
+          "SecurityGroupIds": [
+            {
+              "Ref": "EC2InstanceSecurityGroup"
+            }
+          ],
+          "InstanceType": "t2.micro",
+          "KeyName": "csye6225-centOS",
+          "BlockDeviceMappings": [
+            {
+              "DeviceName": "/dev/sda1",
+              "Ebs": {
+                "VolumeType": "gp2",
+                "DeleteOnTermination": "true",
+                "VolumeSize": "20"
+              }
+            }
+          ],
+          "UserData": {
+            "Fn::Base64": {
+              "Fn::Join": [
+                "",
+                [
+                  "#cloud-boothook\n",
+                  "#!/bin/sh\n",
+                  "cd /etc/profile.d\n",
+                  "sudo touch custom.sh\n",
+                  "sudo echo export RDS_HOSTNAME=",
+                  {
+                    "Fn::GetAtt": [
+                      "RDS",
+                      "Endpoint.Address"
+                    ]
+                  },
+                  " >> custom.sh\n",
+                  "sudo echo export RDS_USERNAME=csye6225master",
+                  " >> custom.sh\n",
+                  "sudo echo export RDS_PASSWORD=csye6225password",
+                  " >> custom.sh\n",
+                  "sudo echo export S3_BUCKET_ADDR=",
+                  {
+                    "Ref": "ImageS3Bucket"
+                  },
+                  " >> custom.sh\n",
+                  "sudo echo export DOMAIN_NAME=", {"Ref": "DomainName"}, ">> custom.sh\n"
+                ]
+              ]
+            }
+          }
+        }
+      },
+
+
+
+      "EncryptedS3Bucket": {
+        "Type": "AWS::S3::Bucket",
+        "Properties": {
+            "AccessControl": "Private",
+            
+            "BucketEncryption": {
+              "ServerSideEncryptionConfiguration": [
+                {
+                  "ServerSideEncryptionByDefault": {
+                    "SSEAlgorithm": "AES256"
+                  }
+                }
+              ]
+            },
+
+            "LifecycleConfiguration": {
+                "Rules": [
+                    {
+                      "Transitions": [
+                          {
+                            "TransitionInDays": "30",
+                            "StorageClass": "STANDARD_IA"
+                          }
+                      ]
+                    }
+                ]
+            }
+        }
+      }
+
+
+    },
+    "Outputs": {
+      "InstanceId": {
+        "Description": "InstanceId of the newly created EC2 instance",
+        "Value": {
+          "Ref": "EC2Instance"
+        }
+      },
+      "AZ": {
+        "Description": "Availability Zone of the newly created EC2 instance",
+        "Value": {
+          "Fn::GetAtt": [
+            "EC2Instance",
+            "AvailabilityZone"
+          ]
+        }
+      },
+      "PublicDNS": {
+        "Description": "Public DNSName of the newly created EC2 instance",
+        "Value": {
+          "Fn::GetAtt": [
+            "EC2Instance",
+            "PublicDnsName"
+          ]
+        }
+      },
+      "PublicIP": {
+        "Description": "Public IP address of the newly created EC2 instance",
+        "Value": {
+          "Fn::GetAtt": [
+            "EC2Instance",
+            "PublicIp"
+          ]
+        }
+      }
+    }
+  }
