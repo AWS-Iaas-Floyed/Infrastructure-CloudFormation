@@ -18,7 +18,7 @@ aws cloudformation create-stack \
   --parameters ParameterKey=Subnet03NameParameter,ParameterValue=Subnet03 \
   --parameters ParameterKey=InternetGatewayNameParameter,ParameterValue=VPC-01-IG \
   --region us-east-1 \
-  --template-body file://networking1.json
+  --template-body file://network1.json
 
 ```
 
