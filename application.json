@@ -262,10 +262,7 @@
       "DependsOn": "RDSDB",
       "Properties": {
         "SubnetId": {
-          "Fn::GetAtt": [
-            "Subnet01",
-            "VpcId"
-          ]
+          "Ref": "Subnet01"
         },
         "ImageId": {
           "Ref": "AMIIDParameter"
