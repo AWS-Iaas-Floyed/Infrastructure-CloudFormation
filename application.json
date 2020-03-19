@@ -386,9 +386,6 @@
             }
           ]
         },
-        "ManagedPolicyArns": [
-          "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-        ],
         "RoleName": "EC2-CSYE6225"
       }
     },
@@ -763,6 +760,9 @@
             }
           ]
         },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+        ],
         "RoleName": "CodeDeployEC2ServiceRole"
       }
     },
