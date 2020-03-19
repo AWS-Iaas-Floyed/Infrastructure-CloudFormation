@@ -760,6 +760,9 @@
             }
           ]
         },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+        ],
         "RoleName": "CodeDeployEC2ServiceRole"
       }
     },
