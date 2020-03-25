@@ -6,7 +6,7 @@ Follow below steps in order to use the AWS CloudFormation to create an applicati
 
 ```
 aws cloudformation create-stack \
---stack-name applicationstack1 \
+--stack-name applicationstack \
 --parameters ParameterKey=AMIIDParameter,ParameterValue=ami-01669c557a23951ba \
 ParameterKey=VPCNameParameter,ParameterValue=VPC-01 \
 ParameterKey=VPCCIDRParameter,ParameterValue=10.10.0.0/16 \
@@ -27,11 +27,11 @@ ParameterKey=InternetGatewayNameParameter,ParameterValue=VPC-01-IG \
 ## DELETE CLOUDFORMATION STACK
 
 ```
-aws cloudformation delete-stack --stack-name applicationstack1
+aws cloudformation delete-stack --stack-name applicationstack
 ```
 
 ## WAIT FOR CLOUDFORMATION STACK DELETION
 
 ```
-aws cloudformation wait stack-delete-complete --stack-name applicationstack1
+aws cloudformation wait stack-delete-complete --stack-name applicationstack
 ```
