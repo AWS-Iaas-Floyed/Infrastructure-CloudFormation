@@ -438,28 +438,7 @@
         }
       }
     },
-    "RDSDB": {
-      "Type": "AWS::RDS::DBInstance",
-      "Properties": {
-        "AllocatedStorage": "5",
-        "DBInstanceClass": "db.t3.micro",
-        "MultiAZ": false,
-        "MasterUsername": "dbuser",
-        "MasterUserPassword": "dbuserpassword123",
-        "DBInstanceIdentifier": "csye6225-spring2020",
-        "DBName": "csye6225",
-        "Engine": "MySQL",
-        "PubliclyAccessible": false,
-        "VPCSecurityGroups": [
-          {
-            "Ref": "DatabaseSecurityGroupRDS"
-          }
-        ],
-        "DBSubnetGroupName": {
-          "Ref": "RDSDBSubnetGroup"
-        }
-      }
-    },
+
     "RDSDBSubnetGroup": {
       "Type": "AWS::RDS::DBSubnetGroup",
       "DependsOn": "VPC",
@@ -892,7 +871,7 @@
     },
     "LaunchConfig": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
-      "DependsOn": "RDSDB",
+      
       "Properties": {
         "AssociatePublicIpAddress": "true",
         "KeyName": "awsdemodev",
@@ -932,12 +911,8 @@
                 "sudo echo export RDS_PASSWORD=dbuserpassword123",
                 " >> userdata.sh\n",
                 "sudo echo export RDS_HOSTNAME=",
-                {
-                  "Fn::GetAtt": [
-                    "RDSDB",
-                    "Endpoint.Address"
-                  ]
-                },
+                
+                
                 " >> userdata.sh\n",
                 "sudo echo export S3_BUCKET_ADDRESS=",
                 {
@@ -1169,12 +1144,7 @@
             },
             "RDS_USERNAME": "dbuser",
             "RDS_PASSWORD": "dbuserpassword123",
-            "RDS_HOSTNAME": {
-              "Fn::GetAtt": [
-                "RDSDB",
-                "Endpoint.Address"
-              ]
-            }
+            "RDS_HOSTNAME": ""
           }
         },
         "Role": {
