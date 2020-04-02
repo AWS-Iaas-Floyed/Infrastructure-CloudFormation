@@ -634,6 +634,33 @@
         ]
       }
     },
+
+    "CircleCILambdaRole": {
+      "Type": "AWS::IAM::Policy",
+      "DependsOn": "LambdaFunction",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "lambda:*"
+              ],
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:BillDueService"
+                }
+              ]
+            }
+          ]
+        },
+        "PolicyName": "CircleCILambdaRole",
+        "Users": [
+          "circleci"
+        ]
+      }
+    },
     "CodeDeployApplication": {
       "Type": "AWS::CodeDeploy::Application",
       "Properties": {
@@ -699,7 +726,8 @@
           ]
         },
         "ManagedPolicyArns": [
-          "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+          "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+          "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
         ],
         "RoleName": "CodeDeployEC2ServiceRole"
       }
@@ -920,6 +948,11 @@
                   ]
                 },
                 " >> userdata.sh\n",
+                "sudo echo export DOMAIN_NAME=",
+                {
+                  "Ref": "DomainName"
+                },
+                " >> userdata.sh\n",
                 "sudo echo export APPLICATION_ENV=prod",
                 " >> userdata.sh\n"
               ]
@@ -1095,7 +1128,135 @@
           }
         ]
       }
+    },
+    "DynamoDBTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH"
+          }
+        ],
+        "TableName": "emailrequest",
+        "BillingMode": "PAY_PER_REQUEST",
+        "TimeToLiveSpecification": {
+          "AttributeName": "ttl",
+          "Enabled": true
+        }
+      }
+    },
+    "LambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": "LambdaExecutionRole",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Fn::Join": [
+              "\n",
+              [
+                "exports.billDueService = function (event, context, callback){ console.log('Hello'); callback(null); }"
+              ]
+            ]
+          }
+        },
+        "FunctionName": "BillDueService",
+        "Handler": "index.billDueService",
+        "Environment": {
+          "Variables": {
+            "DOMAIN_NAME": {
+              "Fn::Sub": "${DomainName}"
+            },
+            "RDS_USERNAME": "dbuser",
+            "RDS_PASSWORD": "dbuserpassword123",
+            "RDS_HOSTNAME": {
+              "Fn::GetAtt": [
+                "RDSDB",
+                "Endpoint.Address"
+              ]
+            }
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs12.x",
+        "Timeout": 20
+      }
+    },
+    "SNS": {
+      "Type": "AWS::SNS::Topic",
+      "DependsOn": "LambdaFunction",
+      "Properties": {
+        "Subscription": [
+          {
+            "Endpoint": {
+              "Fn::GetAtt": [
+                "LambdaFunction",
+                "Arn"
+              ]
+            },
+            "Protocol": "lambda"
+          }
+        ],
+        "TopicName": "BillDueEmailTopic"
+      }
+    },
+    "LambdaInvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "DependsOn": "SNS",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "LambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Ref": "SNS"
+        }
+      }
+    },
+
+
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          "arn:aws:iam::aws:policy/AmazonSESFullAccess",
+          "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess",
+          "arn:aws:iam::aws:policy/AmazonRDSFullAccess"
+        ]
+      }
     }
+
+    
+
+    
   },
   "Outputs": {}
 }
