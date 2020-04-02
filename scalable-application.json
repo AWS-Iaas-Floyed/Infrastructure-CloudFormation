@@ -726,7 +726,8 @@
           ]
         },
         "ManagedPolicyArns": [
-          "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+          "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+          "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
         ],
         "RoleName": "CodeDeployEC2ServiceRole"
       }
@@ -945,6 +946,11 @@
                     "EncryptedS3Bucket",
                     "DomainName"
                   ]
+                },
+                " >> userdata.sh\n",
+                "sudo echo export DOMAIN_NAME=",
+                {
+                  "Ref": "DomainName"
                 },
                 " >> userdata.sh\n",
                 "sudo echo export APPLICATION_ENV=prod",
