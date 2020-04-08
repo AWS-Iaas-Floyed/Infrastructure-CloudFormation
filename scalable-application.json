@@ -727,7 +727,8 @@
         },
         "ManagedPolicyArns": [
           "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
-          "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
+          "arn:aws:iam::aws:policy/AmazonSNSFullAccess",
+          "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
         ],
         "RoleName": "CodeDeployEC2ServiceRole"
       }
@@ -954,6 +955,14 @@
                 },
                 " >> userdata.sh\n",
                 "sudo echo export APPLICATION_ENV=prod",
+                " >> userdata.sh\n",
+                "sudo echo export EMAIL_QUEUE=",
+                {
+                  "Fn::GetAtt": [
+                    "EmailQueue",
+                    "Arn"
+                  ]
+                },
                 " >> userdata.sh\n"
               ]
             ]
@@ -985,9 +994,9 @@
           }
         ],
         "Cooldown": "60",
-        "MinSize": "3",
-        "MaxSize": "10",
-        "DesiredCapacity": "3"
+        "MinSize": "1",
+        "MaxSize": "3",
+        "DesiredCapacity": "2"
       }
     },
     "LoadBalancerListener": {
@@ -1252,11 +1261,14 @@
           "arn:aws:iam::aws:policy/AmazonRDSFullAccess"
         ]
       }
-    }
+    },
 
-    
-
-    
+    "EmailQueue" : {
+      "Type" : "AWS::SQS::Queue",
+      "Properties" : {
+         "QueueName" : "EmailQueue"
+      }
+    }  
   },
   "Outputs": {}
 }
