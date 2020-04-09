@@ -64,6 +64,9 @@
     "DomainName": {
       "Type": "String",
       "Default": "floyed-pinto.me"
+    },
+    "SSLCertificateARN": {
+      "Type": "String"
     }
   },
   "Resources": {
@@ -445,6 +448,7 @@
         "DBInstanceClass": "db.t3.micro",
         "MultiAZ": false,
         "MasterUsername": "dbuser",
+        "StorageEncrypted" : true,
         "MasterUserPassword": "dbuserpassword123",
         "DBInstanceIdentifier": "csye6225-spring2020",
         "DBName": "csye6225",
@@ -634,7 +638,6 @@
         ]
       }
     },
-
     "CircleCILambdaRole": {
       "Type": "AWS::IAM::Policy",
       "DependsOn": "LambdaFunction",
@@ -955,14 +958,6 @@
                 },
                 " >> userdata.sh\n",
                 "sudo echo export APPLICATION_ENV=prod",
-                " >> userdata.sh\n",
-                "sudo echo export EMAIL_QUEUE=",
-                {
-                  "Fn::GetAtt": [
-                    "EmailQueue",
-                    "Arn"
-                  ]
-                },
                 " >> userdata.sh\n"
               ]
             ]
@@ -1002,6 +997,13 @@
     "LoadBalancerListener": {
       "Type": "AWS::ElasticLoadBalancingV2::Listener",
       "Properties": {
+        "Certificates": [
+          {
+            "CertificateArn": {
+              "Fn::Sub": "${SSLCertificateARN}"
+            }
+          }
+        ],
         "DefaultActions": [
           {
             "Type": "forward",
@@ -1013,8 +1015,8 @@
         "LoadBalancerArn": {
           "Ref": "ElasticLoadBalancer"
         },
-        "Port": "80",
-        "Protocol": "HTTP"
+        "Port": "443",
+        "Protocol": "HTTPS"
       }
     },
     "LoadBalancerTargetGroup": {
@@ -1053,15 +1055,15 @@
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
         "GroupName": "LoadBalancerSecurityGroup",
-        "GroupDescription": "Open HTTP access to port 80",
+        "GroupDescription": "Open HTTP access to port 443 for HTTPS",
         "VpcId": {
           "Ref": "VPC"
         },
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp",
-            "FromPort": "80",
-            "ToPort": "80",
+            "FromPort": "443",
+            "ToPort": "443",
             "CidrIp": "0.0.0.0/0"
           }
         ]
@@ -1237,8 +1239,6 @@
         }
       }
     },
-
-
     "LambdaExecutionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -1262,13 +1262,12 @@
         ]
       }
     },
-
-    "EmailQueue" : {
-      "Type" : "AWS::SQS::Queue",
-      "Properties" : {
-         "QueueName" : "EmailQueue"
+    "EmailQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "EmailQueue"
       }
-    }  
+    }
   },
   "Outputs": {}
 }
