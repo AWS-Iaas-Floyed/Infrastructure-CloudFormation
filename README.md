@@ -1,15 +1,16 @@
 # Infrastructure as code using CloudFormation
 
-Follow below steps in order to use the AWS CloudFormation to create an application stack
+Follow below steps in order to use the AWS CloudFormation to create a scalable cloud application stack on AWS
 
 ## CREATE CLOUDFORMATION STACK
 
 ```
 aws cloudformation create-stack \
 --stack-name applicationstack \
---parameters ParameterKey=AMIIDParameter,ParameterValue=ami-01669c557a23951ba \
-ParameterKey=CodeDeployS3BucketName,ParameterValue=code-deploy.floyed-pinto.me \
-ParameterKey=DomainName,ParameterValue=prod.floyed-pinto.me \
+--parameters ParameterKey=AMIIDParameter,ParameterValue={AMI ID of for the AMI} \
+ParameterKey=CodeDeployS3BucketName,ParameterValue={S3 bucket to deploy the artifact from} \
+ParameterKey=DomainName,ParameterValue={Domain Name of the application} \
+ ParameterKey=SSLCertificateARN,ParameterValue={SSL certificate ARN} \
 ParameterKey=VPCNameParameter,ParameterValue=VPC-01 \
 ParameterKey=VPCCIDRParameter,ParameterValue=10.10.0.0/16 \
 ParameterKey=RouteTableNameParameter,ParameterValue=VPC-01-RT \
@@ -33,6 +34,7 @@ ParameterKey=InternetGatewayNameParameter,ParameterValue=VPC-01-IG \
 |AMIIDParameter | The ID of the AMI to be used to run the EC2 instances |
 |CodeDeployS3BucketName | The S3 bucket name which will store the webapp and lambda function code for deployment with CodeDeploy |
 |DomainName | The domain name to configure in Route53 to redirect traffic to the Load balancer |
+|SSLCertificateARN | The SSL certificate ARN to use HTTPS with the Load balancer |
 |VPCNameParameter | Name of the VPC |
 |VPCCIDRParameter | The IPv4 CIDR block for the VPC | 
 |RouteTableNameParameter | Name of the Route table |
@@ -42,7 +44,6 @@ ParameterKey=InternetGatewayNameParameter,ParameterValue=VPC-01-IG \
 |Subnet02NameParameter |  Name for Subnet 2 |
 |Subnet03CidrParameter | CIDR block for Subnet 3 |
 |Subnet03NameParameter | Name for Subnet 3 |
-|InternetGatewayNameParameter | Name of the Internet Gateway |
 
 ## DELETE CLOUDFORMATION STACK
 

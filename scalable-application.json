@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "CloudFormation template to create the application stack",
+  "Description": "CloudFormation template to create a scalable application stack",
   "Parameters": {
     "VPCNameParameter": {
       "Type": "String",
@@ -10,60 +10,63 @@
     "VPCCIDRParameter": {
       "Type": "String",
       "Default": "10.10.0.0/16",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the VPC CIDR block"
     },
     "RouteTableNameParameter": {
       "Type": "String",
       "Default": "VPC-01-RT",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the name of the Route Table"
     },
     "Subnet01CidrParameter": {
       "Type": "String",
       "Default": "10.10.1.0/24",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the VPC CIDR block for Subnet 1"
     },
     "Subnet01NameParameter": {
       "Type": "String",
       "Default": "Subnet01",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the name of the VPC CIDR block for Subnet 1"
     },
     "Subnet02CidrParameter": {
       "Type": "String",
       "Default": "10.10.2.0/24",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the VPC CIDR block for Subnet 2"
     },
     "Subnet02NameParameter": {
       "Type": "String",
       "Default": "Subnet02",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the name of the VPC CIDR block for Subnet 2"
     },
     "Subnet03CidrParameter": {
       "Type": "String",
       "Default": "10.10.3.0/24",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the VPC CIDR block for Subnet 3"
     },
     "Subnet03NameParameter": {
       "Type": "String",
       "Default": "Subnet03",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the name of the VPC CIDR block for Subnet 3"
     },
     "InternetGatewayNameParameter": {
       "Type": "String",
       "Default": "VPC-01-IG",
-      "Description": "Enter the name of the VPC"
+      "Description": "Enter the name of the Internet Gateway"
     },
     "AMIIDParameter": {
       "Type": "String",
-      "Default": "ami-0b4f9942868645e80"
+      "Description": "Enter the AMI ID to use in the EC2 instances"
     },
     "CodeDeployS3BucketName": {
       "Type": "String",
-      "Default": "codedeploy.floyed-pinto.me",
       "Description": "Enter the name of the S3 used to deploy the code"
     },
     "DomainName": {
       "Type": "String",
-      "Default": "floyed-pinto.me"
+      "Description": "Enter the name of the domain which is registered with Route53"
+    },
+    "SSLCertificateARN": {
+      "Type": "String",
+      "Description": "Enter the ARN of the SSL certificate which is present in Amazon Certificate Manager to add it to the LoadBalancer to use HTTPS"
     }
   },
   "Resources": {
@@ -266,46 +269,6 @@
         ]
       }
     },
-    "EC2InstanceSecurityGroup": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "DependsOn": "VPC",
-      "Properties": {
-        "GroupDescription": "Open ports to client",
-        "GroupName": "Application Security Group",
-        "VpcId": {
-          "Fn::GetAtt": [
-            "Subnet01",
-            "VpcId"
-          ]
-        },
-        "SecurityGroupIngress": [
-          {
-            "IpProtocol": "tcp",
-            "FromPort": 22,
-            "ToPort": 22,
-            "CidrIp": "0.0.0.0/0"
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": 80,
-            "ToPort": 80,
-            "CidrIp": "0.0.0.0/0"
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": 443,
-            "ToPort": 443,
-            "CidrIp": "0.0.0.0/0"
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": 3000,
-            "ToPort": 3000,
-            "CidrIp": "0.0.0.0/0"
-          }
-        ]
-      }
-    },
     "EC2CSYE6225": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -388,7 +351,6 @@
     },
     "DatabaseSecurityGroupIngressRDS": {
       "Type": "AWS::EC2::SecurityGroupIngress",
-      "DependsOn": "EC2InstanceSecurityGroup",
       "Properties": {
         "GroupId": {
           "Ref": "DatabaseSecurityGroupRDS"
@@ -445,6 +407,7 @@
         "DBInstanceClass": "db.t3.micro",
         "MultiAZ": false,
         "MasterUsername": "dbuser",
+        "StorageEncrypted": true,
         "MasterUserPassword": "dbuserpassword123",
         "DBInstanceIdentifier": "csye6225-spring2020",
         "DBName": "csye6225",
@@ -634,7 +597,6 @@
         ]
       }
     },
-
     "CircleCILambdaRole": {
       "Type": "AWS::IAM::Policy",
       "DependsOn": "LambdaFunction",
@@ -664,14 +626,14 @@
     "CodeDeployApplication": {
       "Type": "AWS::CodeDeploy::Application",
       "Properties": {
-        "ApplicationName": "csye6225-webapp",
+        "ApplicationName": "billmanagement-webapp",
         "ComputePlatform": "Server"
       }
     },
     "CodeDeployGroup": {
       "Type": "AWS::CodeDeploy::DeploymentGroup",
       "Properties": {
-        "DeploymentGroupName": "csye6225-webapp-deployment",
+        "DeploymentGroupName": "billmanagement-webapp-deployment",
         "ApplicationName": {
           "Ref": "CodeDeployApplication"
         },
@@ -955,14 +917,6 @@
                 },
                 " >> userdata.sh\n",
                 "sudo echo export APPLICATION_ENV=prod",
-                " >> userdata.sh\n",
-                "sudo echo export EMAIL_QUEUE=",
-                {
-                  "Fn::GetAtt": [
-                    "EmailQueue",
-                    "Arn"
-                  ]
-                },
                 " >> userdata.sh\n"
               ]
             ]
@@ -1002,6 +956,13 @@
     "LoadBalancerListener": {
       "Type": "AWS::ElasticLoadBalancingV2::Listener",
       "Properties": {
+        "Certificates": [
+          {
+            "CertificateArn": {
+              "Fn::Sub": "${SSLCertificateARN}"
+            }
+          }
+        ],
         "DefaultActions": [
           {
             "Type": "forward",
@@ -1013,8 +974,8 @@
         "LoadBalancerArn": {
           "Ref": "ElasticLoadBalancer"
         },
-        "Port": "80",
-        "Protocol": "HTTP"
+        "Port": "443",
+        "Protocol": "HTTPS"
       }
     },
     "LoadBalancerTargetGroup": {
@@ -1053,15 +1014,15 @@
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
         "GroupName": "LoadBalancerSecurityGroup",
-        "GroupDescription": "Open HTTP access to port 80",
+        "GroupDescription": "Open HTTP access to port 443 for HTTPS",
         "VpcId": {
           "Ref": "VPC"
         },
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp",
-            "FromPort": "80",
-            "ToPort": "80",
+            "FromPort": "443",
+            "ToPort": "443",
             "CidrIp": "0.0.0.0/0"
           }
         ]
@@ -1170,7 +1131,7 @@
             "Fn::Join": [
               "\n",
               [
-                "exports.billDueService = function (event, context, callback){ console.log('Hello'); callback(null); }"
+                "exports.billDueService = function (event, context, callback){ callback(null); }"
               ]
             ]
           }
@@ -1237,8 +1198,6 @@
         }
       }
     },
-
-
     "LambdaExecutionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -1262,13 +1221,12 @@
         ]
       }
     },
-
-    "EmailQueue" : {
-      "Type" : "AWS::SQS::Queue",
-      "Properties" : {
-         "QueueName" : "EmailQueue"
+    "EmailQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "EmailQueue"
       }
-    }  
+    }
   },
   "Outputs": {}
 }
